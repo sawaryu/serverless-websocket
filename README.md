@@ -1,41 +1,61 @@
-# UPDATE
+# Serverless Websocket
 
-Starting from [version 1.26](https://github.com/serverless/serverless/releases/tag/v1.26.0) Serverless Framework includes two Golang templates:
+simple serverless websocket server with `Lambda` and `dynamoDB`
 
-* `aws-go` - basic template with two functions
-* `aws-go-dep` - **recommended** template using [`dep`](https://github.com/golang/dep) package manager
+![image](./serverless-websocket.png)
 
-You can use them with `create` command:
+![gif](./serverless-websocket.gif)
 
-```
-serverless create -t aws-go-dep
-```
+<br>
 
-Original README below.
+# Requirements
 
----
+installed `Serverless Framework`
 
-# Serverless Template for Golang
-
-This repository contains template for creating serverless services written in Golang.
-
-## Quick Start
-
-1. Create a new service based on this template
-
-```
-serverless create -u https://github.com/serverless/serverless-golang/ -p myservice
+```bash
+$ npm install -g serverless
 ```
 
-2. Compile function
+<br>
 
-```
-cd myservice
-GOOS=linux go build -o bin/main
+# Setup
+
+### aws setting
+
+```bash
+$ export AWS_ACCESS_KEY_ID=<your_access_key_id>
+$ export AWS_SECRET_ACCESS_KEY=<your_secret_access_key>
+
+# confirm and get your account id
+$ aws sts get-caller-identity --query Account --output text
+
+# create .env
+$ echo "AWS_ACCOUNT_ID=<your_account_id>" > .env
 ```
 
-3. Deploy!
+### deploy
 
+```bash
+# build
+$ make build
+
+# deploy
+$ make deploy
+
+# remove
+$ make remove
 ```
-serverless deploy
+
+<br>
+
+# Test
+
+test with `wscat`
+
+```bash
+# install wscat
+$ npm install -g wscat
+
+# get connection and try to send some messages
+$ wscat -c wss://<your_apigateway_id>.execute-api.ap-northeast-1.amazonaws.com/dev
 ```
