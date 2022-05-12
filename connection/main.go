@@ -2,15 +2,10 @@ package connection
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"strconv"
-	"time"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
@@ -21,7 +16,7 @@ type ConnectionStorer interface {
 	MarkConnectionIDDisconnected(ctx context.Context, connectionID string) error
 }
 
-type connectionStorerStruct struct {
+type ConnectionStore struct {
 	ConnectionStorer
 	DDB *dynamodb.DynamoDB
 }
@@ -37,30 +32,29 @@ const (
 )
 
 // create instance having dynamoinstance and connection interface
-func NewConnection() ConnectionStorer {
+func NewStore() ConnectionStorer {
 	new_session, err := session.NewSession(aws.NewConfig().WithRegion(RegionName))
 	if err != nil {
 		log.Fatalln("cannot connect to dynamodb", err.Error())
 	}
 	ddb := dynamodb.New(new_session)
 
-	connection := connectionStorerStruct{
+	connection := ConnectionStore{
 		DDB: ddb,
 	}
-	log.Printf("connection success. the endpoint is : %s", ddb.Endpoint)
 	return &connection
 }
 
 // select
-func (con *connectionStorerStruct) GetConnectionIDs(ctx context.Context) ([]string, error) {
+func (store *ConnectionStore) GetConnectionIDs(ctx context.Context) ([]string, error) {
 	// scan all connections (* 1MB: max scan size )
 	var threads []Thread = []Thread{}
-	scanOut, err := con.DDB.Scan(&dynamodb.ScanInput{
+	scanOut, err := store.DDB.Scan(&dynamodb.ScanInput{
 		TableName: aws.String(TableName),
 	})
 
 	if err != nil {
-		log.Fatalln("cannot call scan output", err.Error())
+		log.Fatalf("cannot calling scan items: %s", err.Error())
 	}
 
 	// unmarshal
@@ -81,8 +75,7 @@ func (con *connectionStorerStruct) GetConnectionIDs(ctx context.Context) ([]stri
 }
 
 // insert
-func (con *connectionStorerStruct) AddConnectionID(ctx context.Context, connectionID string) error {
-	log.Printf("start input. the endpoint is %s", con.DDB.Endpoint)
+func (store *ConnectionStore) AddConnectionID(ctx context.Context, connectionID string) error {
 	param := &dynamodb.PutItemInput{
 		TableName: aws.String(TableName),
 		Item: map[string]*dynamodb.AttributeValue{
@@ -91,16 +84,16 @@ func (con *connectionStorerStruct) AddConnectionID(ctx context.Context, connecti
 			},
 		},
 	}
-	_, err := con.DDB.PutItem(param)
+	_, err := store.DDB.PutItem(param)
 	if err != nil {
-		log.Fatalln("cannot input the connection id", err.Error())
+		log.Fatalf("cannot calling input item: %s", err.Error())
 	}
 
 	return nil
 }
 
 // delete
-func (con *connectionStorerStruct) MarkConnectionIDDisconnected(ctx context.Context, connectionID string) error {
+func (store *ConnectionStore) MarkConnectionIDDisconnected(ctx context.Context, connectionID string) error {
 	input := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"connectionId": {
@@ -110,45 +103,10 @@ func (con *connectionStorerStruct) MarkConnectionIDDisconnected(ctx context.Cont
 		TableName: aws.String(TableName),
 	}
 
-	_, err := con.DDB.DeleteItem(input)
+	_, err := store.DDB.DeleteItem(input)
 	if err != nil {
-		log.Fatalln("cannot calling DeleteItem", err)
+		log.Fatalf("cannot calling delete item: %s", err.Error())
 	}
 
-	return nil
-}
-
-// holds the api gateway for the entire lifespan of the lambda function
-var apigateway *apigatewaymanagementapi.ApiGatewayManagementApi
-
-func Echo(ctx context.Context, event events.APIGatewayWebsocketProxyRequest, store ConnectionStorer) error {
-	if apigateway == nil {
-		sess, err := session.NewSession()
-		if err != nil {
-			log.Fatalln("Unable to create AWS session", err.Error())
-		}
-		dname := event.RequestContext.DomainName
-		stage := event.RequestContext.Stage
-		endpoint := fmt.Sprintf("https://%v/%v", dname, stage)
-		apigateway = apigatewaymanagementapi.New(sess, aws.NewConfig().WithEndpoint(endpoint))
-	}
-
-	body := event.Body
-	resp := fmt.Sprintf("Echo me: %v", body)
-	// if the body contains an integer, than a delay in the response is introduced
-	delay, err := strconv.Atoi(body)
-	if err != nil {
-		delay = 0
-	}
-	time.Sleep(time.Duration(delay) * time.Second)
-
-	connections, _ := store.GetConnectionIDs(ctx)
-	for _, conn := range connections {
-		input := &apigatewaymanagementapi.PostToConnectionInput{
-			ConnectionId: aws.String(conn),
-			Data:         []byte(resp),
-		}
-		_, _ = apigateway.PostToConnection(input)
-	}
 	return nil
 }
