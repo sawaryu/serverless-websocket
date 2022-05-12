@@ -33,13 +33,13 @@ type Thread struct {
 
 const (
 	RegionName    = "ap-northeast-1"
-	TableName     = "ConnectionsTable"
+	TableName     = "connectionsTable"
 	AttributeName = "connectionId"
 )
 
 // create instance having dynamoinstance and connection interface
 func NewConnection() ConnectionStorer {
-	new_session, err := session.NewSession(aws.NewConfig().WithRegion("ap-northeast-1"))
+	new_session, err := session.NewSession(aws.NewConfig().WithRegion(RegionName))
 	if err != nil {
 		log.Fatalln("cannot connect to dynamodb", err.Error())
 	}

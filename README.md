@@ -119,3 +119,12 @@ reference self variable value
 
 `${file(../myCustomFile.yml)}`
 file reference
+
+```
+aws dynamodb put-item \
+    --table-name connectionsTable \
+    --item \
+        '{"connectionId": {"S": "sampleconnectionid"}}' \
+    --return-consumed-capacity TOTAL  
+
+```
