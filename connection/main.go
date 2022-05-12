@@ -32,9 +32,8 @@ type Thread struct {
 }
 
 const (
-	RegionName    = "ap-northeast-1"
-	TableName     = "connectionsTable"
-	AttributeName = "connectionId"
+	RegionName = "ap-northeast-1"
+	TableName  = "connectionsTable"
 )
 
 // create instance having dynamoinstance and connection interface
@@ -48,6 +47,7 @@ func NewConnection() ConnectionStorer {
 	connection := connectionStorerStruct{
 		DDB: ddb,
 	}
+	log.Printf("connection success. the endpoint is : %s", ddb.Endpoint)
 	return &connection
 }
 
@@ -82,10 +82,11 @@ func (con *connectionStorerStruct) GetConnectionIDs(ctx context.Context) ([]stri
 
 // insert
 func (con *connectionStorerStruct) AddConnectionID(ctx context.Context, connectionID string) error {
+	log.Printf("start input. the endpoint is %s", con.DDB.Endpoint)
 	param := &dynamodb.PutItemInput{
 		TableName: aws.String(TableName),
 		Item: map[string]*dynamodb.AttributeValue{
-			AttributeName: {
+			"connectionId": {
 				S: aws.String(connectionID),
 			},
 		},
@@ -102,8 +103,8 @@ func (con *connectionStorerStruct) AddConnectionID(ctx context.Context, connecti
 func (con *connectionStorerStruct) MarkConnectionIDDisconnected(ctx context.Context, connectionID string) error {
 	input := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			AttributeName: {
-				N: aws.String(connectionID),
+			"connectionId": {
+				S: aws.String(connectionID),
 			},
 		},
 		TableName: aws.String(TableName),

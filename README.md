@@ -57,7 +57,7 @@ $ go mod init github.com/sawaryu/micro-socket
 $ go mod tidy
 
 # build
-$ GOOS=linux go build -o bin/main
+$ GOOS=linux go build -o bin/handleRequest
 ```
 
 `serverless.yml`
