@@ -23,15 +23,20 @@ This repository contains template for creating serverless services written in Go
 
 1. Create a new service based on this template
 
-```
+```bash
 serverless create -u https://github.com/serverless/serverless-golang/ -p myservice
 ```
 
 2. Compile function
 
-```
-cd myservice
-GOOS=linux go build -o bin/main
+```bash
+
+$ cd myservice
+$ GOOS=linux go build -o bin/main
+
+# --or--
+
+$ GOOS=linux go build -o ./bin/handleRequest
 ```
 
 3. Deploy!
@@ -89,7 +94,14 @@ $ sls deploy --verbose
 
 `test`
 ```bash
+# invoke
 $ sls invoke -f hello
+
+# socket connection
+$ npm install -g wscat
+
+# execute connection and send any messages
+$ wscat -c wss://{YOUR-API-ID}.execute-api.{YOUR-REGION}.amazonaws.com/{STAGE}
 ```
 
 `cleanup and destroy aws environment`
