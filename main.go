@@ -10,13 +10,13 @@ import (
 	"github.com/sawaryu/micro-socket/connection"
 )
 
-var connectionStore = connection.NewConnection()
-
 func handleRequest(ctx context.Context, event events.APIGatewayWebsocketProxyRequest) (events.APIGatewayProxyResponse, error) {
+	connectionStore := connection.NewConnection()
+
 	rc := event.RequestContext
 	switch rk := rc.RouteKey; rk {
 	case "$connect":
-		// 接続時にconnectionIDを保存する
+		// save connection id
 		err := connectionStore.AddConnectionID(ctx, rc.ConnectionID)
 		if err != nil {
 			return events.APIGatewayProxyResponse{
@@ -24,7 +24,7 @@ func handleRequest(ctx context.Context, event events.APIGatewayWebsocketProxyReq
 			}, err
 		}
 	case "$disconnect":
-		// 切断時にconnectionIDをリボークする
+		// delete connection id
 		err := connectionStore.MarkConnectionIDDisconnected(ctx, rc.ConnectionID)
 		if err != nil {
 			return events.APIGatewayProxyResponse{
@@ -32,6 +32,7 @@ func handleRequest(ctx context.Context, event events.APIGatewayWebsocketProxyReq
 			}, err
 		}
 	case "$default":
+		// get all current connection ids
 		// manage every message sent by the clients
 		log.Println("Default", rc.ConnectionID)
 		err := connection.Echo(ctx, event, connectionStore)

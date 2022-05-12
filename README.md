@@ -97,3 +97,13 @@ $ sls invoke -f hello
 # simply below
 $ sls remove
 ```
+# Syntax
+
+`${opt:stage, 'dev'}`
+cli option
+
+`${self:service.name}`
+reference self variable value
+
+`${file(../myCustomFile.yml)}`
+file reference

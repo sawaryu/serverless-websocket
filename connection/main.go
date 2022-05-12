@@ -11,6 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type ConnectionStorer interface {
@@ -21,20 +23,97 @@ type ConnectionStorer interface {
 
 type connectionStorerStruct struct {
 	ConnectionStorer
+	DDB *dynamodb.DynamoDB
 }
 
+type Thread struct {
+	// 'dynamodbav' must be assign attribute name
+	ConnectionID string `dynamodbav:"connectionId" json:"connectionId"`
+}
+
+const (
+	RegionName    = "ap-northeast-1"
+	TableName     = "ConnectionsTable"
+	AttributeName = "connectionId"
+)
+
+// create instance having dynamoinstance and connection interface
 func NewConnection() ConnectionStorer {
-	var connection = connectionStorerStruct{}
+	new_session, err := session.NewSession(aws.NewConfig().WithRegion("ap-northeast-1"))
+	if err != nil {
+		log.Fatalln("cannot connect to dynamodb", err.Error())
+	}
+	ddb := dynamodb.New(new_session)
+
+	connection := connectionStorerStruct{
+		DDB: ddb,
+	}
 	return &connection
 }
 
+// select
 func (con *connectionStorerStruct) GetConnectionIDs(ctx context.Context) ([]string, error) {
-	return []string{}, nil
+	// scan all connections (* 1MB: max scan size )
+	var threads []Thread = []Thread{}
+	scanOut, err := con.DDB.Scan(&dynamodb.ScanInput{
+		TableName: aws.String(TableName),
+	})
+
+	if err != nil {
+		log.Fatalln("cannot call scan output", err.Error())
+	}
+
+	// unmarshal
+	for _, scanedThread := range scanOut.Items {
+		var threadTmp Thread
+		_ = dynamodbattribute.UnmarshalMap(scanedThread, &threadTmp)
+		threads = append(threads, threadTmp)
+	}
+
+	// to []string
+	var connectionIDs []string
+	for _, thread := range threads {
+		connectionIDs = append(connectionIDs, thread.ConnectionID)
+	}
+
+	return connectionIDs, nil
+
 }
+
+// insert
 func (con *connectionStorerStruct) AddConnectionID(ctx context.Context, connectionID string) error {
+	param := &dynamodb.PutItemInput{
+		TableName: aws.String(TableName),
+		Item: map[string]*dynamodb.AttributeValue{
+			AttributeName: {
+				S: aws.String(connectionID),
+			},
+		},
+	}
+	_, err := con.DDB.PutItem(param)
+	if err != nil {
+		log.Fatalln("cannot input the connection id", err.Error())
+	}
+
 	return nil
 }
+
+// delete
 func (con *connectionStorerStruct) MarkConnectionIDDisconnected(ctx context.Context, connectionID string) error {
+	input := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			AttributeName: {
+				N: aws.String(connectionID),
+			},
+		},
+		TableName: aws.String(TableName),
+	}
+
+	_, err := con.DDB.DeleteItem(input)
+	if err != nil {
+		log.Fatalln("cannot calling DeleteItem", err)
+	}
+
 	return nil
 }
 
@@ -62,13 +141,13 @@ func Echo(ctx context.Context, event events.APIGatewayWebsocketProxyRequest, sto
 	}
 	time.Sleep(time.Duration(delay) * time.Second)
 
-	connections, err := store.GetConnectionIDs(ctx)
+	connections, _ := store.GetConnectionIDs(ctx)
 	for _, conn := range connections {
 		input := &apigatewaymanagementapi.PostToConnectionInput{
 			ConnectionId: aws.String(conn),
 			Data:         []byte(resp),
 		}
-		_, err = apigateway.PostToConnection(input)
+		_, _ = apigateway.PostToConnection(input)
 	}
 	return nil
 }
