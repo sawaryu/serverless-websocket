@@ -1,8 +1,7 @@
 frameworkVersion: ^3.15.2
 
-service: micro-socket
+service: serverless-websocket
 
-# provider
 provider:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'ap-northeast-1'}
@@ -23,7 +22,6 @@ provider:
       Resource:
         - "arn:aws:execute-api:*:*:**/@connections/*"
 
-# package
 package:
   exclude:
     - ./**
@@ -40,24 +38,18 @@ functions:
       - websocket:
           route: $default
 
-# resources used with this app  (*dynamoDB)
 resources:
   Resources:
     connectionsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: connectionsTable
-        # On demand payment
+        TableName: Session
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: connectionId
+          - AttributeName: session_id
             AttributeType: S
         KeySchema:
-          - AttributeName: connectionId
+          - AttributeName: session_id
             KeyType: HASH
-        # cannot coexisting with `BillingMode: PAY_PER_REQUEST`
-        # ProvisionedThroughput:
-        #   ReadCapacityUnits: 5
-        #   WriteCapacityUnits: 5
         SSESpecification:
           SSEEnabled: True

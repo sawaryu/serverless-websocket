@@ -1,4 +1,4 @@
-module github.com/sawaryu/micro-socket
+module github.com/sawaryu/serverless-websocket
 
 go 1.18
 

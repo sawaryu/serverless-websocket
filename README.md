@@ -53,7 +53,7 @@ serverless deploy
 $ sls create -u https://github.com/serverless/serverless-golang/ -p micro-socket
 
 # init go mod and get github.com/aws/aws-lambda-go
-$ go mod init github.com/sawaryu/micro-socket
+$ go mod init github.com/sawaryu/serverless-websocket
 $ go mod tidy
 
 # build
