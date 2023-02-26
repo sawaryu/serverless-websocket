@@ -38,9 +38,12 @@ $ make remove
 
 # Test
 
+test with `wscat` module
+
 ```bash
+# install ws cat
 $ npm install -g wscat
 
 # execute connection and send any messages
-$ wscat -c wss://{YOUR-API-ID}.execute-api.{YOUR-REGION}.amazonaws.com/{STAGE}
+$ wscat -c wss://<your-apigateway-id>.execute-api.ap-northeast-1.amazonaws.com/dev
 ```

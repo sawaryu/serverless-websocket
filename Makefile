@@ -1,7 +1,3 @@
-.PHONY: cretae
-create:
-	sls create -u https://github.com/serverless/serverless-golang/ -p serverless-websocket
-
 .PHONY: build
 build:
 	GOOS=linux go build -o bin/handleRequest
