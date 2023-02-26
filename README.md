@@ -47,84 +47,31 @@ serverless deploy
 
 # Setup
 
-`operation to build`
-```bash
-# start
-$ sls create -u https://github.com/serverless/serverless-golang/ -p micro-socket
+### AWS setting
 
-# init go mod and get github.com/aws/aws-lambda-go
-$ go mod init github.com/sawaryu/serverless-websocket
-$ go mod tidy
+```bash
+$ export AWS_ACCESS_KEY_ID=<your_access_key_id>
+$ export AWS_SECRET_ACCESS_KEY=<your_secret_access_key>
+
+# confirm
+$ aws sts get-caller-identity --query Account --output text
+```
+
+### Build operation
+
+```bash
+# create
+$ make create
 
 # build
-$ GOOS=linux go build -o bin/handleRequest
+$ make build
 ```
 
-`serverless.yml`
-```yml
-frameworkVersion: ^3.15.2
+# Test
 
-service: micro-socket
-
-provider:
-  stage: dev
-  region: ap-northeast-1
-  name: aws
-  runtime: go1.x
-  environment:
-    TZ: Asia/Tokyo
-
-package:
-  exclude:
-    - ./**
-  include:
-    - ./bin/**
-
-functions:
-  hello:
-    handler: bin/main
-    name: micro-socket-example-function
-```
-
-`deploy`
 ```bash
-# deploy
-$ sls deploy --verbose
-```
-
-`test`
-```bash
-# invoke
-$ sls invoke -f hello
-
-# socket connection
 $ npm install -g wscat
 
 # execute connection and send any messages
 $ wscat -c wss://{YOUR-API-ID}.execute-api.{YOUR-REGION}.amazonaws.com/{STAGE}
-```
-
-`cleanup and destroy aws environment`
-```bash
-# simply below
-$ sls remove
-```
-# Syntax
-
-`${opt:stage, 'dev'}`
-cli option
-
-`${self:service.name}`
-reference self variable value
-
-`${file(../myCustomFile.yml)}`
-file reference
-
-```
-aws dynamodb put-item \
-    --table-name connectionsTable \
-    --item \
-        '{"connectionId": {"S": "sampleconnectionid"}}' \
-    --return-consumed-capacity TOTAL  
-
 ```
