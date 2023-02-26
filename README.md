@@ -1,6 +1,6 @@
 # Serverless Websocket
 
-simple serverless websocket server with `Lambda` and `dynamoDB`
+simple serverless websocket server with `Lambda` and `DynamoDB`
 
 ![image](./serverless-websocket.png)
 

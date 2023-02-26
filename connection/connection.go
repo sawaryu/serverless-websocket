@@ -11,7 +11,7 @@ import (
 )
 
 type IConnectionStore interface {
-	FetchConnectionIDs(ctx context.Context) []string
+	FetchConnectionIDs(ctx context.Context) ([]string, error)
 	AddConnectionID(ctx context.Context, connectionID string) error
 	MarkConnectionDisconnected(ctx context.Context, connectionID string) error
 }
@@ -43,19 +43,22 @@ func NewStore() IConnectionStore {
 }
 
 // scan all connections (* 1MB: max scan size )
-func (store *ConnectionStore) FetchConnectionIDs(ctx context.Context) (connectionIDs []string) {
+func (store *ConnectionStore) FetchConnectionIDs(ctx context.Context) (connectionIDs []string, err error) {
 	var connections []Connection
 	scanOut, err := store.Scan(&dynamodb.ScanInput{
 		TableName: aws.String(TableName),
 	})
 
 	if err != nil {
-		log.Fatalf("couldn't scan items: %s", err.Error())
+		return connectionIDs, err
 	}
 
 	for _, itemConnection := range scanOut.Items {
 		var connectionTmp Connection
-		_ = dynamodbattribute.UnmarshalMap(itemConnection, &connectionTmp)
+		err = dynamodbattribute.UnmarshalMap(itemConnection, &connectionTmp)
+		if err != nil {
+			return connectionIDs, err
+		}
 		connections = append(connections, connectionTmp)
 	}
 
@@ -63,7 +66,7 @@ func (store *ConnectionStore) FetchConnectionIDs(ctx context.Context) (connectio
 		connectionIDs = append(connectionIDs, connection.ConnectionID)
 	}
 
-	return connectionIDs
+	return connectionIDs, err
 
 }
 
@@ -80,7 +83,7 @@ func (store *ConnectionStore) AddConnectionID(ctx context.Context, connectionID 
 
 	_, err := store.PutItem(putInput)
 	if err != nil {
-		log.Fatalf("couldn't calling input item: %s", err.Error())
+		return err
 	}
 
 	return nil
@@ -99,7 +102,7 @@ func (store *ConnectionStore) MarkConnectionDisconnected(ctx context.Context, co
 
 	_, err := store.DeleteItem(deleteInput)
 	if err != nil {
-		log.Fatalf("couldn't calling delete item: %s", err.Error())
+		return err
 	}
 
 	return nil

@@ -60,7 +60,7 @@ func handleDefault(ctx context.Context, event events.APIGatewayWebsocketProxyReq
 	if apigateway == nil {
 		awsSession, err := session.NewSession()
 		if err != nil {
-			log.Fatalf("couldn't create new aws session: %s", err.Error())
+			return err
 		}
 		domainName := event.RequestContext.DomainName
 		stage := event.RequestContext.Stage
@@ -71,7 +71,11 @@ func handleDefault(ctx context.Context, event events.APIGatewayWebsocketProxyReq
 	body := event.Body
 	response := fmt.Sprintf("Echo me: %v", body)
 
-	connectionIDs := store.FetchConnectionIDs(ctx)
+	connectionIDs, err := store.FetchConnectionIDs(ctx)
+	if err != nil {
+		return err
+	}
+
 	for _, connID := range connectionIDs {
 		input := &apigatewaymanagementapi.PostToConnectionInput{
 			ConnectionId: aws.String(connID),
