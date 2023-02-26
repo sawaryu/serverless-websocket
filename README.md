@@ -33,8 +33,6 @@ $ aws sts get-caller-identity --query Account --output text
 $ echo "AWS_ACCOUNT_ID=<your_account_id>" > .env
 ```
 
-<br>
-
 ### deploy
 
 ```bash
