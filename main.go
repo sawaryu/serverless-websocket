@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -18,11 +16,10 @@ import (
 
 func handleRequest(ctx context.Context, event events.APIGatewayWebsocketProxyRequest) (events.APIGatewayProxyResponse, error) {
 	connectionStore := connection.NewStore()
-
 	rc := event.RequestContext
+
 	switch rk := rc.RouteKey; rk {
 	case "$connect":
-		// save connection id
 		err := connectionStore.AddConnectionID(ctx, rc.ConnectionID)
 		if err != nil {
 			return events.APIGatewayProxyResponse{
@@ -30,17 +27,13 @@ func handleRequest(ctx context.Context, event events.APIGatewayWebsocketProxyReq
 			}, err
 		}
 	case "$disconnect":
-		// delete connection id
-		err := connectionStore.MarkConnectionIDDisconnected(ctx, rc.ConnectionID)
+		err := connectionStore.MarkConnectionDisconnected(ctx, rc.ConnectionID)
 		if err != nil {
 			return events.APIGatewayProxyResponse{
 				StatusCode: http.StatusInternalServerError,
 			}, err
 		}
 	case "$default":
-		// get all current connection ids
-		// manage every message sent by the clients
-		log.Println("Default", rc.ConnectionID)
 		err := handleDefault(ctx, event, connectionStore)
 		if err != nil {
 			return events.APIGatewayProxyResponse{
@@ -48,9 +41,9 @@ func handleRequest(ctx context.Context, event events.APIGatewayWebsocketProxyReq
 			}, err
 		}
 	default:
-		log.Fatalf("Unknown RouteKey %v", rk)
+		log.Fatalf("unknown route key: %v", rk)
 	}
-	// API Gateway is expecting an "everything is ok" answer unless something happens
+
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
 	}, nil
@@ -63,32 +56,26 @@ func main() {
 // holds the api gateway for the entire lifespan of the lambda function
 var apigateway *apigatewaymanagementapi.ApiGatewayManagementApi
 
-func handleDefault(ctx context.Context, event events.APIGatewayWebsocketProxyRequest, store connection.ConnectionStorer) error {
+func handleDefault(ctx context.Context, event events.APIGatewayWebsocketProxyRequest, store connection.IConnectionStore) error {
 	if apigateway == nil {
-		sess, err := session.NewSession()
+		awsSession, err := session.NewSession()
 		if err != nil {
-			log.Fatalf("unable to create aws session: %s", err.Error())
+			log.Fatalf("couldn't to create new aws session: %s", err.Error())
 		}
-		dname := event.RequestContext.DomainName
+		domainName := event.RequestContext.DomainName
 		stage := event.RequestContext.Stage
-		endpoint := fmt.Sprintf("https://%v/%v", dname, stage)
-		apigateway = apigatewaymanagementapi.New(sess, aws.NewConfig().WithEndpoint(endpoint))
+		endpoint := fmt.Sprintf("https://%s/%s", domainName, stage)
+		apigateway = apigatewaymanagementapi.New(awsSession, aws.NewConfig().WithEndpoint(endpoint))
 	}
 
 	body := event.Body
-	resp := fmt.Sprintf("Echo me: %v", body)
-	// if the body contains an integer, than a delay in the response is introduced
-	delay, err := strconv.Atoi(body)
-	if err != nil {
-		delay = 0
-	}
-	time.Sleep(time.Duration(delay) * time.Second)
+	response := fmt.Sprintf("Echo me: %v", body)
 
-	connections, _ := store.GetConnectionIDs(ctx)
-	for _, conn := range connections {
+	connectionIDs := store.FetchConnectionIDs(ctx)
+	for _, connID := range connectionIDs {
 		input := &apigatewaymanagementapi.PostToConnectionInput{
-			ConnectionId: aws.String(conn),
-			Data:         []byte(resp),
+			ConnectionId: aws.String(connID),
+			Data:         []byte(response),
 		}
 		_, _ = apigateway.PostToConnection(input)
 	}
