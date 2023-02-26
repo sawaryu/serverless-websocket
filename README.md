@@ -8,9 +8,19 @@ serverless simple websocket server with `Lambda` and `dynamoDB`
 
 <br>
 
+# Requirements
+
+installed `Serverless Framework`
+
+```bash
+$ npm install -g serverless
+```
+
+<br>
+
 # Setup
 
-### AWS setting
+### aws setting
 
 ```bash
 $ export AWS_ACCESS_KEY_ID=<your_access_key_id>
@@ -25,7 +35,7 @@ $ echo "AWS_ACCOUNT_ID=<your_account_id>" > .env
 
 <br>
 
-### Deploy
+### deploy
 
 ```bash
 # build
