@@ -1,6 +1,10 @@
 # Serverless Websocket
 
-serverless simple websocket with `lambda` and `dynamodb`
+serverless simple websocket server with `Lambda` and `dynamoDB`
+
+![image](./serverless-websocket.png)
+
+![gif](./serverless-websocket.gif)
 
 <br>
 
@@ -12,7 +16,7 @@ serverless simple websocket with `lambda` and `dynamodb`
 $ export AWS_ACCESS_KEY_ID=<your_access_key_id>
 $ export AWS_SECRET_ACCESS_KEY=<your_secret_access_key>
 
-# confirm
+# confirm and get your account id
 $ aws sts get-caller-identity --query Account --output text
 
 # create .env
@@ -38,12 +42,12 @@ $ make remove
 
 # Test
 
-test with `wscat` module
+test with `wscat`
 
 ```bash
-# install ws cat
+# install wscat
 $ npm install -g wscat
 
-# execute connection and send any messages
+# get connection and try to send some messages
 $ wscat -c wss://<your_apigateway_id>.execute-api.ap-northeast-1.amazonaws.com/dev
 ```
