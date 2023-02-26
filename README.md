@@ -45,5 +45,5 @@ test with `wscat` module
 $ npm install -g wscat
 
 # execute connection and send any messages
-$ wscat -c wss://<your-apigateway-id>.execute-api.ap-northeast-1.amazonaws.com/dev
+$ wscat -c wss://<your_apigateway_id>.execute-api.ap-northeast-1.amazonaws.com/dev
 ```
